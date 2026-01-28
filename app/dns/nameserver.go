@@ -3,6 +3,7 @@ package dns
 import (
 	"context"
 	"net/url"
+	"runtime"
 	"strings"
 	"time"
 
@@ -97,7 +98,7 @@ func NewClient(
 	tag string,
 	ipOption dns.IPOption,
 	matcherInfos *[]*DomainMatcherInfo,
-	updateDomainRule func(strmatcher.Matcher, int, []*DomainMatcherInfo) error,
+	updateDomainRule func(strmatcher.Matcher, int, []*DomainMatcherInfo),
 ) (*Client, error) {
 	client := &Client{}
 
@@ -131,10 +132,12 @@ func NewClient(
 		var rules []string
 		ruleCurr := 0
 		ruleIter := 0
-		for _, domain := range ns.PrioritizedDomain {
+		for i, domain := range ns.PrioritizedDomain {
+			ns.PrioritizedDomain[i] = nil
 			domainRule, err := toStrMatcher(domain.Type, domain.Domain)
 			if err != nil {
-				return errors.New("failed to create prioritized domain").Base(err).AtWarning()
+				errors.LogErrorInner(ctx, err, "failed to create domain matcher, ignore domain rule [type: ", domain.Type, ", domain: ", domain.Domain, "]")
+				domainRule, _ = toStrMatcher(DomainMatchingType_Full, "hack.fix.index.for.illegal.domain.rule")
 			}
 			originalRuleIdx := ruleCurr
 			if ruleCurr < len(ns.OriginalRules) {
@@ -151,11 +154,10 @@ func NewClient(
 				rules = append(rules, domainRule.String())
 				ruleCurr++
 			}
-			err = updateDomainRule(domainRule, originalRuleIdx, *matcherInfos)
-			if err != nil {
-				return errors.New("failed to create prioritized domain").Base(err).AtWarning()
-			}
+			updateDomainRule(domainRule, originalRuleIdx, *matcherInfos)
 		}
+		ns.PrioritizedDomain = nil
+		runtime.GC()
 
 		// Establish expected IPs
 		var expectedMatcher router.GeoIPMatcher
@@ -164,6 +166,8 @@ func NewClient(
 			if err != nil {
 				return errors.New("failed to create expected ip matcher").Base(err).AtWarning()
 			}
+			ns.ExpectedGeoip = nil
+			runtime.GC()
 		}
 
 		// Establish unexpected IPs
@@ -173,6 +177,8 @@ func NewClient(
 			if err != nil {
 				return errors.New("failed to create unexpected ip matcher").Base(err).AtWarning()
 			}
+			ns.UnexpectedGeoip = nil
+			runtime.GC()
 		}
 
 		if len(clientIP) > 0 {

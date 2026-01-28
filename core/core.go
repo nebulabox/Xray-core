@@ -16,10 +16,10 @@ import (
 	"github.com/xtls/xray-core/common/serial"
 )
 
-var (
-	Version_x byte = 25
-	Version_y byte = 11
-	Version_z byte = 26
+var ( // year, month, day
+	Version_x byte = 26
+	Version_y byte = 1
+	Version_z byte = 28
 )
 
 var (
