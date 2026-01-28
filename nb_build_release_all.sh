@@ -1,5 +1,6 @@
 #!/usr/bin/env sh
-set -x
+# set -x
+set -e
 # Change version in core/core.go
 NAME=xray 
 SRC="github.com/xtls/xray-core/main" 
