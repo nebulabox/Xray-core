@@ -45,7 +45,7 @@ CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build                     "${PARAM[@]
 # CGO_ENABLED=0 GOOS=windows GOARCH=arm64 go build                   "${PARAM[@]}" -o release/${NAME}_windows_arm64.exe ${SRC}                 
 
 pushd release
-upx *
+upx * || true
 for entry in *
 do
   echo "Packing : ${entry%.*}.tar.xz"
